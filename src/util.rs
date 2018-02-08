@@ -43,31 +43,6 @@ pub fn xor_with_single(buf: &[u8], c: u8) -> Vec<u8> {
                 .collect();
 }
 
-pub fn char_freq(buf: &[u8]) -> i64 {
-    let mut res = 0;
-    for b in buf {
-        match *b {
-            b'e' | b'E' => res += 12,
-            b't' | b'T' => res += 9,
-            b'a' | b'A' => res += 8,
-            b'o' | b'O' => res += 7,
-            b'i' | b'I' => res += 6,
-            b'n' | b'N' => res += 6,
-            b's' | b'S'  => res += 6,
-            b'h' | b'H' => res += 6,
-            b'r' | b'R' => res += 5,
-            b'd' | b'D' => res += 4,
-            b'l' | b'L' => res += 4,
-            b'u' | b'U' => res += 2,
-            b' ' => res += 10,
-            b'\n' => res += 5,
-            b'#' | b'{' | b'}' | b'&' | b'%' | b'/' | b'*' | b'<' | b'>' | b'@' => res -= 10,
-            _ => ()
-        }
-    }
-    return res;
-}
-
 pub fn xor_hex_bufs(hex_str1: &str, hex_str2: &str) -> Option<String> {
 
     if let Some(ref buf1) = hex_to_binary(hex_str1) {
