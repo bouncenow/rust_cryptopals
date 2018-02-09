@@ -1,4 +1,5 @@
 use std::fmt::Write;
+use std::u8;
 
 pub fn hex_to_binary(hex_str: &str) -> Option<Vec<u8>> {
     assert!(hex_str.len() % 2 == 0);
@@ -65,6 +66,22 @@ pub fn hamming_distance(buf1: &[u8], buf2: &[u8]) -> u32 {
                 .sum();
 }
 
+pub fn pad_pkcs(buf: &mut Vec<u8>, block_size: usize) {
+    let desired_block_size = if block_size > buf.len() {
+        block_size
+    } else if block_size == buf.len() {
+        block_size + block_size
+    } else {
+        block_size * (1 + buf.len() / block_size)
+    };
+    let bytes_to_pad = desired_block_size - buf.len();
+    assert!(bytes_to_pad < (u8::MAX as usize));
+    
+    for _ in 0..bytes_to_pad {
+        buf.push(bytes_to_pad as u8);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,5 +105,18 @@ mod tests {
         let buf1 = "this is a test".as_bytes();
         let buf2 = "wokka wokka!!!".as_bytes();
         assert_eq!(37, hamming_distance(&buf1, &buf2));
+    }
+
+    #[test]
+    fn pad_pkcs_works() {
+        let mut buf_to_pad = b"YELLOW SUBMARINE".to_vec();
+        let expected_with_pad = b"YELLOW SUBMARINE\x04\x04\x04\x04".to_vec();
+        pad_pkcs(&mut buf_to_pad, 20);
+        assert_eq!(expected_with_pad, buf_to_pad);
+
+        let mut buf_to_pad = b"YELLOW SUBMARINE".to_vec();
+        let expected_with_pad = b"YELLOW SUBMARINE\x08\x08\x08\x08\x08\x08\x08\x08".to_vec();
+        pad_pkcs(&mut buf_to_pad, 8);
+        assert_eq!(expected_with_pad, buf_to_pad);
     }
 }
