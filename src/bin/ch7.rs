@@ -1,11 +1,11 @@
-extern crate openssl;
 extern crate base64;
+extern crate rucry;
 
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
 
-use openssl::symm::{decrypt, Cipher};
+use rucry::block;
 
 fn main() {
     let f = File::open("7.txt").expect("File not found");
@@ -20,10 +20,8 @@ fn main() {
 
     let key = b"YELLOW SUBMARINE";
 
-    let cipher = Cipher::aes_128_ecb();
-    let decrypted = decrypt(cipher, key, None, &encrypted_bytes);
-    match decrypted {
-        Ok(bytes) => println!("Decrypted as:\n\"{}\"", String::from_utf8(bytes).unwrap()),
-        Err(err) => println!("Error: {:?}", err)
+    match block::aes_ecb_decrypt(key, &encrypted_bytes, block::Padding::NoPadding) {
+        Some(bytes) => println!("Decrypted as:\n\"{}\"", String::from_utf8(bytes).unwrap()),
+        _ => println!("Error during decryption")
     }
 }
