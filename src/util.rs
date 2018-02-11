@@ -1,6 +1,9 @@
 use std::fmt::Write;
 use std::u8;
 
+use rand::Rng;
+use rand::os;
+
 pub fn hex_to_binary(hex_str: &str) -> Option<Vec<u8>> {
     assert!(hex_str.len() % 2 == 0);
     let mut res: Vec<u8> = Vec::new();
@@ -64,6 +67,15 @@ pub fn hamming_distance(buf1: &[u8], buf2: &[u8]) -> u32 {
                 .zip(buf2.iter())
                 .map(|(x, y)| (x ^ y).count_ones())
                 .sum();
+}
+
+pub fn generate_random_bytes(len: usize) -> Vec<u8> {
+    let mut os_rng = os::OsRng::new().unwrap();
+
+    let mut rand_buf = vec![0u8; len];
+    os_rng.fill_bytes(&mut rand_buf);
+
+    rand_buf
 }
 
 #[cfg(test)]

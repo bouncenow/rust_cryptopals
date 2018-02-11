@@ -6,6 +6,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 
 use rucry::util;
+use rucry::block;
 
 const BLOCK_SIZE: usize = 16;
 
@@ -19,7 +20,7 @@ fn main() {
         let c_text_bytes = util::hex_to_binary(&hex_str).unwrap();
         assert!(c_text_bytes.len() % BLOCK_SIZE == 0);
 
-        let hamming_dist = hamming_avg_dist(&c_text_bytes);
+        let hamming_dist = block::block_hamming_average_dist(&c_text_bytes, block::BLOCK_SIZE);
         cipher_texts_with_dists.push((c_text_bytes, hamming_dist));
     }
 
@@ -34,20 +35,4 @@ fn main() {
     for i in 0..(buf.len() / BLOCK_SIZE) {
         println!("{:?}", &buf[(i * BLOCK_SIZE)..((i + 1) * BLOCK_SIZE)]);
     }
-}
-
-fn hamming_avg_dist(buf: &[u8]) -> f64 {
-
-    let mut dists: Vec<u32> = Vec::new();
-
-    let block_num = buf.len() / BLOCK_SIZE;
-    for i in 0..(block_num - 1) {
-        for j in (i + 1)..block_num {
-            let block1 = &buf[(i * BLOCK_SIZE)..((i + 1) * BLOCK_SIZE)];
-            let block2 = &buf[(j * BLOCK_SIZE)..((j + 1) * BLOCK_SIZE)];
-            dists.push(util::hamming_distance(block1, block2));
-        }
-    }
-
-    return (dists.iter().sum::<u32>() as f64) / (dists.len() as f64);
 }

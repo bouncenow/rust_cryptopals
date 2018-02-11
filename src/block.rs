@@ -2,6 +2,7 @@ use std::u8;
 
 use openssl::symm;
 use openssl::error::ErrorStack;
+use rand::{thread_rng, Rng};
 
 use util;
 
@@ -10,7 +11,13 @@ pub enum Padding {
     PKCS7,
 }
 
-const BLOCK_SIZE: usize = 16;
+#[derive(PartialEq, Debug)]
+pub enum EncryptionMode {
+    ECB,
+    CBC,
+}
+
+pub const BLOCK_SIZE: usize = 16;
 
 fn aes_decrypt_block(
     key: &[u8],
@@ -205,6 +212,58 @@ fn unpad_pkcs(mut buf: Vec<u8>) -> Option<Vec<u8>> {
     let prev_len = buf.len();
     buf.truncate(prev_len - (padding_byte as usize));
     Some(buf)
+}
+
+const MIN_RANDOM_PADDING: usize = 5;
+const MAX_RANDOM_PADDING: usize = 10;
+
+fn generate_random_mode() -> EncryptionMode {
+    let i = thread_rng().gen_range(0, 2);
+    if i == 0 {
+        EncryptionMode::CBC
+    } else {
+        EncryptionMode::ECB
+    }
+}
+
+pub fn encryption_oracle(data: &[u8]) -> (Vec<u8>, EncryptionMode) {
+
+    let mut padded = Vec::new();
+    let pad_before = thread_rng().gen_range(MIN_RANDOM_PADDING, MAX_RANDOM_PADDING);
+    let pad_after = thread_rng().gen_range(MIN_RANDOM_PADDING, MAX_RANDOM_PADDING);
+    padded.extend_from_slice(&util::generate_random_bytes(pad_before));
+    padded.extend_from_slice(data);
+    padded.extend_from_slice(&util::generate_random_bytes(pad_after));
+
+    let key = util::generate_random_bytes(BLOCK_SIZE);
+
+    match generate_random_mode() {
+        EncryptionMode::ECB => (aes_ecb_encrypt(&key, &padded, Padding::PKCS7).unwrap(), EncryptionMode::ECB),
+        EncryptionMode::CBC => {
+            let iv = util::generate_random_bytes(BLOCK_SIZE);
+            (aes_cbc_encrypt(&key, &padded, &iv, Padding::PKCS7).unwrap(), EncryptionMode::CBC)
+        }
+    }
+}
+
+pub fn block_hamming_average_dist(buf: &[u8], block_len: usize) -> f64 {
+
+    let mut dists: Vec<u32> = Vec::new();
+
+    let block_num = buf.len() / block_len;
+    for i in 0..(block_num - 1) {
+        for j in (i + 1)..block_num {
+            let block1 = &buf[(i * block_len)..((i + 1) * block_len)];
+            let block2 = &buf[(j * block_len)..((j + 1) * block_len)];
+            dists.push(util::hamming_distance(block1, block2));
+        }
+    }
+
+    return (dists.iter().sum::<u32>() as f64) / (dists.len() as f64);
+}
+
+pub fn decryption_oracle(cipher_text: &[u8]) -> EncryptionMode {
+    EncryptionMode::CBC
 }
 
 #[cfg(test)]
